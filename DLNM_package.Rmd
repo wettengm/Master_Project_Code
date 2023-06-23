@@ -1,0 +1,831 @@
+---
+title: "DLNM"
+author: "Marc Wettengel"
+date: "1/27/2023"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE, warnings = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(dlnm)
+library(splines)
+
+Epiweek_avg <- read.csv("Epiweek_avg.csv")
+Epiweek_avg <- Epiweek_avg[c(2,3,4,5,6,7,8,9,10,12,13,14,15,16,17)]
+
+# Add in the study week
+Epiweek_avg$study_week<-(Epiweek_avg)
+Epiweek_avg_test <- Epiweek_avg
+Epiweek_avg <- Epiweek_avg[,c(1,2,16,6,15,3,4,5,7,8,9,10,11,12,13,14)]
+Epiweek_avg$Outbreak <- ceiling(Epiweek_avg$Outbreak)
+```
+
+# Rainfall
+
+### Linear Relationship
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.rain <- crossbasis(Epiweek_avg$Total_Rain, lag = 30, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.rain)
+
+model1 <- glm(Outbreak ~ cb1.rain , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+summary(model1)
+pred.cb1.rain <- crosspred(cb1.rain, model1, at = 0:30, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.rain, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80, xlab = "Lag (week)",
+     ylab = "RR", main = "Rainfall lag structure")
+
+plot(pred.cb1.rain, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.rain, "slices", var = 1, col = 6, cumul = TRUE, xlab = "Lag (epiweek)",
+     ylab = "Relative Risk", main = "Rainfall")
+
+plot(pred.cb1.rain, xlab="Rainfall", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of rainfall effect")
+
+plot(pred.cb1.rain, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="Rainfall",ylab="Lag")) 
+```
+
+
+# SALINITY
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.sal <- crossbasis(Epiweek_avg$Salinity, lag = 15, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.sal)
+
+modelsal <- glm(Outbreak ~ cb1.sal , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.sal <- crosspred(cb1.sal, modelsal, at = 0:30, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.sal, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.sal, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+
+plot(pred.cb1.sal, "slices", var = 1, col = 6, cumul = TRUE, xlab = "Lag (epiweek)",
+     ylab = "Relative Risk", main = "Salinity")
+
+plot(pred.cb1.sal, xlab="Salinity", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of salinity effect")
+
+plot(pred.cb1.sal, "contour", xlab="Salinity", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="Salinity",ylab="Lag")) 
+```
+
+
+# SST
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.sst <- crossbasis(Epiweek_avg$Temperature, lag = 30, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.sst)
+
+modelsst <- glm(Outbreak ~ cb1.sst , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.sst <- crosspred(cb1.sst, modelsst, at = 0:16, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.sst, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80, xlab="Lag (week)", ylab = "RR", main = "Sea Surface Temperature lag structure")
+
+plot(pred.cb1.sst, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.sst, "slices", var = 1, col = 6, cumul = TRUE, xlab="Lag (epiweek)", ylab = "Relative Risk", main = "Sea Surface Temperature")
+
+plot(pred.cb1.sst, xlab="SST", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of SST effect")
+
+plot(pred.cb1.sst, "contour", xlab="SST", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="SST",ylab="Lag")) 
+```
+
+# PAR
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.par <- crossbasis(Epiweek_avg$PAR, lag = 20, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.par)
+
+modelpar <- glm(Outbreak ~ cb1.par , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.par <- crosspred(cb1.par, modelpar, at = 0:65, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.par, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.par, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+
+plot(pred.cb1.par, "slices", var = 1, col = 6, cumul = TRUE, xlab = "Lag (epiweek)",
+     ylab = "Relative Risk", main = "Photosynthetically Available Radiation")
+
+plot(pred.cb1.par, xlab="PAR", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of PAR effect")
+
+plot(pred.cb1.par, "contour", xlab="PAR", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="PAR",ylab="Lag")) 
+```
+
+# NV Count
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.nv <- crossbasis(Epiweek_avg$NVcount, lag = 15, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.nv)
+
+modelnv <- glm(Outbreak ~ cb1.nv , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.nv <- crosspred(cb1.nv, modelnv, at = 0:30, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.nv, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.nv, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.nv, "slices", var = 1, col = 6, cumul = TRUE, xlab = "Lag (epiweek)",
+     ylab = "Relative Risk", main = "Community Case Count")
+
+plot(pred.cb1.nv, xlab="NVcount", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of NVcount effect")
+
+plot(pred.cb1.nv, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="NVcount",ylab="Lag")) 
+```
+```{r}
+cb1.nv <- crossbasis(Epiweek_avg$NVcount, lag = 15, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.nv)
+
+modelnv <- glm(Outbreak ~ cb1.nv, family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.nv <- crosspred(cb1.nv, modelnv, at = 0:30, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.nv, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.nv, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.nv, "slices", var = 1, col = 6, cumul = TRUE)
+
+plot(pred.cb1.nv, xlab="NVcount", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of NVcount effect")
+
+plot(pred.cb1.nv, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="NVcount",ylab="Lag"))
+```
+# WSPD
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.wind <- crossbasis(Epiweek_avg$WSPD, lag = 10, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.wind)
+
+modelwind <- glm(Outbreak ~ cb1.wind , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.wind <- crosspred(cb1.wind, modelwind, at = 0:12, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.wind, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.wind, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.wind, "slices", var = 1, col = 6, cumul = TRUE, xlab = "Lag (epiweek)",
+     ylab = "Relative Risk", main = "Wind Speed")
+
+plot(pred.cb1.wind, xlab="Rainfall", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of WSPD effect")
+
+plot(pred.cb1.wind, "contour", xlab="WSPD", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="WSPD",ylab="Lag")) 
+```
+
+# WDIR
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.winddir <- crossbasis(Epiweek_avg$WDIR, lag = 15, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.winddir)
+
+modelwind <- glm(Outbreak ~ cb1.winddir , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+
+pred.cb1.winddir <- crosspred(cb1.winddir, modelwind, at = 0:12, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.winddir, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.winddir, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.winddir, "slices", var = 1, col = 6, cumul = TRUE)
+plot(pred.cb1.winddir, "slices", var = 1, col = 6, cumul = TRUE, xlab = "Lag (epiweek)",
+     ylab = "Relative Risk", main = "Wind Speed")
+
+plot(pred.cb1.winddir, xlab="Rainfall", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of WSPD effect")
+
+plot(pred.cb1.winddir, "contour", xlab="WSPD", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="WSPD",ylab="Lag")) 
+```
+
+
+
+
+
+```{r}
+
+modelfinal <- glm(Outbreak ~ cb1.rain + cb1.sst, family="binomial", Epiweek_avg)
+summary(modelfinal)
+
+
+pred.cb1.model1 <- crosspred(cb1.sst, modelfinal, at = 0:15, bylag = 1, cumul = T)
+pred.cb1.model2 <- crosspred(cb1.rain, modelfinal, at = 0:30, bylag = 1, cumul = T)
+pred.cb1.model2
+
+
+# Creating plots for each variable in the model
+plot(pred.cb1.model1, "slices", var = 1, col = 6, cumul = TRUE)
+plot(pred.cb1.model2, "slices", var = 1, col = 6, cumul = TRUE)
+
+# Getting coefficient for the effect of rainfall against the outbreak, after accounting for SST
+
+thing <- pred.cb1.model2$allfit # "at=" argument from the crosspred function is same length as variable "names"  
+                                # Effect of each unit of variable for entire defined lag period 
+                                # (0 to 30 in this case in 0.5 unit intervals)
+thingdf <- data.frame(thing = as.numeric(names(thing)), 
+                    thing2 = thing) # appears to be taking previous line of code but making it into a data frame 
+
+thingmodel <- glm(thing2 ~ thing, data = thingdf) # Now creating a model for the effect of increase in rainfall for all lag periods
+
+summary(thingmodel) # So for the cumulative lag, the effect of rainfall is positively associated with outbreak? 
+                    # Gaussian family not binomial
+thing
+thingdf
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# MANUAL LAGS
+
+#### 1 WEEK
+
+```{r, include = FALSE}
+library(ggplot2)
+```
+
+```{r}
+lag1 <- filter(Epiweek_avg, epiweek == 53 | epiweek == 52 |
+                         epiweek == 4 | epiweek == 3 |
+                         epiweek == 45 | epiweek == 10)
+
+lag1$Outbreak <- as.factor(ifelse(lag1$Year == 2003 & lag1$epiweek == 53 |
+                                  lag1$Year == 2004 & lag1$epiweek == 52 |
+                                  lag1$Year == 2007 & lag1$epiweek == 4 |
+                                  lag1$Year == 2014 & lag1$epiweek == 3 |
+                                  lag1$Year == 2016 & lag1$epiweek == 45 |
+                                  lag1$Year == 2018 & lag1$epiweek == 10, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag1)
+wilcox.test(Salinity ~ Outbreak, data = lag1)
+wilcox.test(Temperature ~ Outbreak, data = lag1)
+wilcox.test(PAR ~ Outbreak, data = lag1)
+wilcox.test(WSPD ~ Outbreak, data = lag1)
+wilcox.test(WDIR ~ Outbreak, data = lag1)
+
+t.test(Total_Rain ~ Outbreak, data = lag1)
+t.test(Salinity ~ Outbreak, data = lag1)
+t.test(Temperature ~ Outbreak, data = lag1)
+t.test(PAR ~ Outbreak, data = lag1)
+t.test(WSPD ~ Outbreak, data = lag1)
+t.test(WDIR ~ Outbreak, data = lag1)
+```
+
+#### 2 WEEK
+```{r}
+lag2 <- filter(Epiweek_avg, epiweek == 52 | epiweek == 51 |
+                         epiweek == 3 | epiweek == 2 |
+                         epiweek == 44 | epiweek == 9)
+
+lag2$Outbreak <- as.factor(ifelse(lag2$Year == 2003 & lag2$epiweek == 52 |
+                                  lag2$Year == 2004 & lag2$epiweek == 51 |
+                                  lag2$Year == 2007 & lag2$epiweek == 3 |
+                                  lag2$Year == 2014 & lag2$epiweek == 2 |
+                                  lag2$Year == 2016 & lag2$epiweek == 44 |
+                                  lag2$Year == 2018 & lag2$epiweek == 9, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag2)
+wilcox.test(Salinity ~ Outbreak, data = lag2)
+wilcox.test(Temperature ~ Outbreak, data = lag2)
+wilcox.test(PAR ~ Outbreak, data = lag2)
+wilcox.test(WSPD ~ Outbreak, data = lag2)
+wilcox.test(WDIR ~ Outbreak, data = lag2)
+
+t.test(Total_Rain ~ Outbreak, data = lag2)
+t.test(Salinity ~ Outbreak, data = lag2)
+t.test(Temperature ~ Outbreak, data = lag2)
+t.test(PAR ~ Outbreak, data = lag2)
+t.test(WSPD ~ Outbreak, data = lag2)
+t.test(WDIR ~ Outbreak, data = lag2)
+```
+
+#### 3 WEEK
+```{r}
+lag3 <- filter(Epiweek_avg, epiweek == 51 | epiweek == 50 |
+                         epiweek == 2 | epiweek == 1 |
+                         epiweek == 43 | epiweek == 8)
+
+lag3$Outbreak <- as.factor(ifelse(lag3$Year == 2003 & lag3$epiweek == 51 |
+                                  lag3$Year == 2004 & lag3$epiweek == 50 |
+                                  lag3$Year == 2007 & lag3$epiweek == 2 |
+                                  lag3$Year == 2014 & lag3$epiweek == 1 |
+                                  lag3$Year == 2016 & lag3$epiweek == 43 |
+                                  lag3$Year == 2018 & lag3$epiweek == 8, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag3)
+wilcox.test(Salinity ~ Outbreak, data = lag3)
+wilcox.test(Temperature ~ Outbreak, data = lag3)
+wilcox.test(PAR ~ Outbreak, data = lag3)
+wilcox.test(WSPD ~ Outbreak, data = lag3)
+wilcox.test(WDIR ~ Outbreak, data = lag3)
+
+t.test(Total_Rain ~ Outbreak, data = lag3)
+t.test(Salinity ~ Outbreak, data = lag3)
+t.test(Temperature ~ Outbreak, data = lag3)
+t.test(PAR ~ Outbreak, data = lag3)
+t.test(WSPD ~ Outbreak, data = lag3)
+t.test(WDIR ~ Outbreak, data = lag3)
+```
+
+#### 4 Week
+```{r}
+lag4 <- filter(Epiweek_avg, epiweek == 50 | epiweek == 49 |
+                         epiweek == 1 | epiweek ==  52 |
+                         epiweek == 42 | epiweek == 7)
+
+lag4$Outbreak <- as.factor(ifelse(lag4$Year == 2003 & lag4$epiweek == 50 |
+                                  lag4$Year == 2004 & lag4$epiweek == 49 |
+                                  lag4$Year == 2007 & lag4$epiweek == 1 |
+                                  lag4$Year == 2013 & lag4$epiweek == 52 |
+                                  lag4$Year == 2016 & lag4$epiweek == 42 |
+                                  lag4$Year == 2018 & lag4$epiweek == 7, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag4)
+wilcox.test(Salinity ~ Outbreak, data = lag4)
+wilcox.test(Temperature ~ Outbreak, data = lag4)
+wilcox.test(PAR ~ Outbreak, data = lag4)
+wilcox.test(WSPD ~ Outbreak, data = lag4)
+wilcox.test(WDIR ~ Outbreak, data = lag4)
+
+t.test(Total_Rain ~ Outbreak, data = lag4)
+t.test(Salinity ~ Outbreak, data = lag4)
+t.test(Temperature ~ Outbreak, data = lag4)
+t.test(PAR ~ Outbreak, data = lag4)
+t.test(WSPD ~ Outbreak, data = lag4)
+t.test(WDIR ~ Outbreak, data = lag4)
+```
+
+#### 5 WEEK
+```{r}
+lag5 <- filter(Epiweek_avg, epiweek == 49 | epiweek == 48 |
+                         epiweek == 52 | epiweek ==  51 |
+                         epiweek == 41 | epiweek == 6)
+
+lag5$Outbreak <- as.factor(ifelse(lag5$Year == 2003 & lag5$epiweek == 49 |
+                                  lag5$Year == 2004 & lag5$epiweek == 48 |
+                                  lag5$Year == 2006 & lag5$epiweek == 52 |
+                                  lag5$Year == 2013 & lag5$epiweek == 51 |
+                                  lag5$Year == 2016 & lag5$epiweek == 41 |
+                                  lag5$Year == 2018 & lag5$epiweek == 6, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag5)
+wilcox.test(Salinity ~ Outbreak, data = lag5)
+wilcox.test(Temperature ~ Outbreak, data = lag5)
+wilcox.test(PAR ~ Outbreak, data = lag5)
+wilcox.test(WSPD ~ Outbreak, data = lag5)
+wilcox.test(WDIR ~ Outbreak, data = lag5)
+
+t.test(Total_Rain ~ Outbreak, data = lag5)
+t.test(Salinity ~ Outbreak, data = lag5)
+t.test(Temperature ~ Outbreak, data = lag5)
+t.test(PAR ~ Outbreak, data = lag5)
+t.test(WSPD ~ Outbreak, data = lag5)
+t.test(WDIR ~ Outbreak, data = lag5)
+```
+
+#### 6 WEEK
+```{r}
+lag6 <- filter(Epiweek_avg, epiweek == 48 | epiweek == 47 |
+                         epiweek == 51 | epiweek ==  50 |
+                         epiweek == 40 | epiweek == 5)
+
+lag6$Outbreak <- as.factor(ifelse(lag6$Year == 2003 & lag6$epiweek == 48 |
+                                  lag6$Year == 2004 & lag6$epiweek == 47 |
+                                  lag6$Year == 2006 & lag6$epiweek == 51 |
+                                  lag6$Year == 2013 & lag6$epiweek == 50 |
+                                  lag6$Year == 2016 & lag6$epiweek == 40 |
+                                  lag6$Year == 2018 & lag6$epiweek == 5, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag6)
+wilcox.test(Salinity ~ Outbreak, data = lag6)
+wilcox.test(Temperature ~ Outbreak, data = lag6)
+wilcox.test(PAR ~ Outbreak, data = lag6)
+wilcox.test(WSPD ~ Outbreak, data = lag6)
+wilcox.test(WDIR ~ Outbreak, data = lag6)
+
+t.test(Total_Rain ~ Outbreak, data = lag6)
+t.test(Salinity ~ Outbreak, data = lag6)
+t.test(Temperature ~ Outbreak, data = lag6)
+t.test(PAR ~ Outbreak, data = lag6)
+t.test(WSPD ~ Outbreak, data = lag6)
+t.test(WDIR ~ Outbreak, data = lag6)
+```
+
+#### 7 WEEK
+```{r}
+lag7 <- filter(Epiweek_avg, epiweek == 47 | epiweek == 46 |
+                         epiweek == 50 | epiweek == 49 |
+                         epiweek == 39 | epiweek == 4)
+
+lag7$Outbreak <- as.factor(ifelse(lag7$Year == 2003 & lag7$epiweek == 47 |
+                                  lag7$Year == 2004 & lag7$epiweek == 46 |
+                                  lag7$Year == 2006 & lag7$epiweek == 50 |
+                                  lag7$Year == 2013 & lag7$epiweek == 49 |
+                                  lag7$Year == 2016 & lag7$epiweek == 39 |
+                                  lag7$Year == 2018 & lag7$epiweek == 4, 1, 0))
+
+#ggplot(lag7, aes(x = Outbreak, y = Total_Rain)) +
+ # geom_boxplot(position = "dodge") + 
+ # theme_bw()+
+  #labs(y= "Rainfall", x = "Outbreak")
+
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag7)
+wilcox.test(Salinity ~ Outbreak, data = lag7)
+wilcox.test(Temperature ~ Outbreak, data = lag7)
+wilcox.test(PAR ~ Outbreak, data = lag7)
+wilcox.test(WSPD ~ Outbreak, data = lag7)
+wilcox.test(WDIR ~ Outbreak, data = lag7)
+
+t.test(Total_Rain ~ Outbreak, data = lag7)
+t.test(Salinity ~ Outbreak, data = lag7)
+t.test(Temperature ~ Outbreak, data = lag7)
+t.test(PAR ~ Outbreak, data = lag7)
+t.test(WSPD ~ Outbreak, data = lag7)
+t.test(WDIR ~ Outbreak, data = lag7)
+```
+
+#### 8 WEEK
+```{r}
+lag8 <- filter(Epiweek_avg, epiweek == 46 | epiweek == 45 |
+                         epiweek == 49 | epiweek ==  48 |
+                         epiweek == 38 | epiweek == 3)
+
+lag8$Outbreak <- as.factor(ifelse(lag8$Year == 2003 & lag8$epiweek == 46 |
+                                  lag8$Year == 2004 & lag8$epiweek == 45 |
+                                  lag8$Year == 2006 & lag8$epiweek == 49 |
+                                  lag8$Year == 2013 & lag8$epiweek == 48 |
+                                  lag8$Year == 2016 & lag8$epiweek == 38 |
+                                  lag8$Year == 2018 & lag8$epiweek == 3, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag8)
+wilcox.test(Salinity ~ Outbreak, data = lag8)
+wilcox.test(Temperature ~ Outbreak, data = lag8)
+wilcox.test(PAR ~ Outbreak, data = lag8)
+wilcox.test(WSPD ~ Outbreak, data = lag8)
+wilcox.test(WDIR ~ Outbreak, data = lag8)
+
+t.test(Total_Rain ~ Outbreak, data = lag8)
+t.test(Salinity ~ Outbreak, data = lag8)
+t.test(Temperature ~ Outbreak, data = lag8)
+t.test(PAR ~ Outbreak, data = lag8)
+t.test(WSPD ~ Outbreak, data = lag8)
+t.test(WDIR ~ Outbreak, data = lag8)
+```
+
+#### 9 WEEK
+```{r}
+lag9 <- filter(Epiweek_avg, epiweek == 45 | epiweek == 44 |
+                         epiweek == 48 | epiweek ==  47 |
+                         epiweek == 37 | epiweek == 2)
+
+lag9$Outbreak <- as.factor(ifelse(lag9$Year == 2003 & lag9$epiweek == 45 |
+                                  lag9$Year == 2004 & lag9$epiweek == 44 |
+                                  lag9$Year == 2006 & lag9$epiweek == 48 |
+                                  lag9$Year == 2013 & lag9$epiweek == 47 |
+                                  lag9$Year == 2016 & lag9$epiweek == 37 |
+                                  lag9$Year == 2018 & lag9$epiweek == 2, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag9)
+wilcox.test(Salinity ~ Outbreak, data = lag9)
+wilcox.test(Temperature ~ Outbreak, data = lag9)
+wilcox.test(PAR ~ Outbreak, data = lag9)
+wilcox.test(WSPD ~ Outbreak, data = lag9)
+wilcox.test(WDIR ~ Outbreak, data = lag9)
+
+t.test(Total_Rain ~ Outbreak, data = lag9)
+t.test(Salinity ~ Outbreak, data = lag9)
+t.test(Temperature ~ Outbreak, data = lag9)
+t.test(PAR ~ Outbreak, data = lag9)
+t.test(WSPD ~ Outbreak, data = lag9)
+t.test(WDIR ~ Outbreak, data = lag9)
+```
+
+#### 10 WEEK
+```{r}
+lag10 <- filter(Epiweek_avg, epiweek == 44 | epiweek == 43 |
+                         epiweek == 47 | epiweek ==  46 |
+                         epiweek == 36 | epiweek == 1)
+
+lag10$Outbreak <- as.factor(ifelse(lag10$Year == 2003 & lag10$epiweek == 44 |
+                                  lag10$Year == 2004 & lag10$epiweek == 43 |
+                                  lag10$Year == 2006 & lag10$epiweek == 47 |
+                                  lag10$Year == 2013 & lag10$epiweek == 46 |
+                                  lag10$Year == 2016 & lag10$epiweek == 36 |
+                                  lag10$Year == 2018 & lag10$epiweek == 1, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag10)
+wilcox.test(Salinity ~ Outbreak, data = lag10)
+wilcox.test(Temperature ~ Outbreak, data = lag10)
+wilcox.test(PAR ~ Outbreak, data = lag10)
+wilcox.test(WSPD ~ Outbreak, data = lag10)
+wilcox.test(WDIR ~ Outbreak, data = lag10)
+
+t.test(Total_Rain ~ Outbreak, data = lag10)
+t.test(Salinity ~ Outbreak, data = lag10)
+t.test(Temperature ~ Outbreak, data = lag10)
+t.test(PAR ~ Outbreak, data = lag10)
+t.test(WSPD ~ Outbreak, data = lag10)
+t.test(WDIR ~ Outbreak, data = lag10)
+```
+
+#### 11 WEEK
+```{r}
+lag11 <- filter(Epiweek_avg, epiweek == 43 | epiweek == 42 |
+                         epiweek == 46 | epiweek ==  45 |
+                         epiweek == 35 | epiweek == 52)
+
+lag11$Outbreak <- as.factor(ifelse(lag11$Year == 2003 & lag11$epiweek == 43 |
+                                  lag11$Year == 2004 & lag11$epiweek == 42 |
+                                  lag11$Year == 2006 & lag11$epiweek == 46 |
+                                  lag11$Year == 2013 & lag11$epiweek == 45 |
+                                  lag11$Year == 2016 & lag11$epiweek == 35 |
+                                  lag11$Year == 2017 & lag11$epiweek == 52, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag11)
+wilcox.test(Salinity ~ Outbreak, data = lag11)
+wilcox.test(Temperature ~ Outbreak, data = lag11)
+wilcox.test(PAR ~ Outbreak, data = lag11)
+wilcox.test(WSPD ~ Outbreak, data = lag11)
+wilcox.test(WDIR ~ Outbreak, data = lag11)
+
+t.test(Total_Rain ~ Outbreak, data = lag11)
+t.test(Salinity ~ Outbreak, data = lag11)
+t.test(Temperature ~ Outbreak, data = lag11)
+t.test(PAR ~ Outbreak, data = lag11)
+t.test(WSPD ~ Outbreak, data = lag11)
+t.test(WDIR ~ Outbreak, data = lag11)
+```
+
+#### 12 WEEK
+```{r}
+lag12 <- filter(Epiweek_avg, epiweek == 42 | epiweek == 41 |
+                         epiweek == 45 | epiweek ==  44 |
+                         epiweek == 34 | epiweek == 51)
+
+lag12$Outbreak <- as.factor(ifelse(lag12$Year == 2003 & lag12$epiweek == 42 |
+                                  lag12$Year == 2004 & lag12$epiweek == 41 |
+                                  lag12$Year == 2006 & lag12$epiweek == 45 |
+                                  lag12$Year == 2013 & lag12$epiweek == 44 |
+                                  lag12$Year == 2016 & lag12$epiweek == 34 |
+                                  lag12$Year == 2017 & lag12$epiweek == 51, 1, 0))
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag12)
+wilcox.test(Salinity ~ Outbreak, data = lag12)
+wilcox.test(Temperature ~ Outbreak, data = lag12)
+wilcox.test(PAR ~ Outbreak, data = lag12)
+wilcox.test(WSPD ~ Outbreak, data = lag12)
+wilcox.test(WDIR ~ Outbreak, data = lag12)
+
+t.test(Total_Rain ~ Outbreak, data = lag12)
+t.test(Salinity ~ Outbreak, data = lag12)
+t.test(Temperature ~ Outbreak, data = lag12)
+t.test(PAR ~ Outbreak, data = lag12)
+t.test(WSPD ~ Outbreak, data = lag12)
+t.test(WDIR ~ Outbreak, data = lag12)
+```
+
+
+### 13 WEEK
+```{r}
+lag13 <- filter(Epiweek_avg, epiweek == 41 | epiweek == 40 |
+                         epiweek == 44 | epiweek == 43 |
+                         epiweek == 33 | epiweek == 50)
+
+lag13$Outbreak <- as.factor(ifelse(lag13$Year == 2003 & lag13$epiweek == 41 |
+                                  lag13$Year == 2004 & lag13$epiweek == 40 |
+                                  lag13$Year == 2006 & lag13$epiweek == 44 |
+                                  lag13$Year == 2013 & lag13$epiweek == 43 |
+                                  lag13$Year == 2016 & lag13$epiweek == 33 |
+                                  lag13$Year == 2017 & lag13$epiweek == 50, 1, 0))
+
+
+#ggplot(lag_rainfall13, aes(x = Outbreak, y = Total_Rain)) +
+  #geom_boxplot(position = "dodge") + 
+  #theme_bw()+
+  #labs(y= "Rainfall", x = "Outbreak")
+
+wilcox.test(Total_Rain ~ Outbreak, data = lag13)
+wilcox.test(Salinity ~ Outbreak, data = lag13)
+wilcox.test(Temperature ~ Outbreak, data = lag13)
+wilcox.test(PAR ~ Outbreak, data = lag13)
+wilcox.test(WSPD ~ Outbreak, data = lag13)
+wilcox.test(WDIR ~ Outbreak, data = lag13)
+
+t.test(Total_Rain ~ Outbreak, data = lag13)
+t.test(Salinity ~ Outbreak, data = lag13)
+t.test(Temperature ~ Outbreak, data = lag13)
+t.test(PAR ~ Outbreak, data = lag13)
+t.test(WSPD ~ Outbreak, data = lag13)
+t.test(WDIR ~ Outbreak, data = lag13)
+```
+
+
+
+
+
+
+```{r}
+wilcox.test(Total_Rain ~ Outbreak, data = lag1)
+wilcox.test(Total_Rain ~ Outbreak, data = lag2)
+wilcox.test(Total_Rain ~ Outbreak, data = lag3)
+wilcox.test(Total_Rain ~ Outbreak, data = lag4)
+wilcox.test(Total_Rain ~ Outbreak, data = lag5)
+wilcox.test(Total_Rain ~ Outbreak, data = lag6)
+wilcox.test(Total_Rain ~ Outbreak, data = lag7)
+wilcox.test(Total_Rain ~ Outbreak, data = lag8)
+wilcox.test(Total_Rain ~ Outbreak, data = lag9)
+wilcox.test(Total_Rain ~ Outbreak, data = lag10)
+wilcox.test(Total_Rain ~ Outbreak, data = lag11)
+wilcox.test(Total_Rain ~ Outbreak, data = lag12)
+wilcox.test(Total_Rain ~ Outbreak, data = lag13)
+```
+
+
+
+
+
+
+
+
+
+
+# Identify LAG for GLMM model
+```{r}
+# CROSSBASIS MATRIX
+ns.basis <- crossbasis(Epiweek_avg$WSPD, lag = 15, 
+                       argvar=list(fun="lin"), 
+                       arglag=list(fun="integer"),na.rm = T)
+#range <- range(Epiweek_avg$Total_Rain,na.rm=T)
+#krain <- range[1] + (range[2]-range[1])/5*1:4
+#mean(Epiweek_avg$Total_Rain)
+#ns.basis <- crossbasis(Epiweek_avg$Total_Rain, varknots=krain, cenvalue=3,
+#lagdf=5,maxlag=15)
+##############################
+# MODEL FIT AND PREDICTION
+##############################
+
+ns <- glm(Outbreak ~ ns.basis , family="quasibinomial", Epiweek_avg)
+
+ns.pred <- crosspred(ns.basis, ns, at = 0:12, bylag = 1, cumul = T)
+##############################
+# RESULTS AND PLOTS
+##############################
+# 3-D PLOT (FIGURE 1)
+# crossplot(ns.pred,label="Total Rainfall")
+# SLICES (FIGURE 2, TOP)
+percentiles <- round(quantile(Epiweek_avg$WSPD,c(0.001,0.05,0.95,0.999), na.rm = T),1)
+ns.pred <- crosspred(ns.basis,ns,at=c(percentiles,0:16))
+plot(ns.pred,"slices",var=percentiles,lag=c(0,5,7,10),
+label="Temperature")
+# OVERALL EFFECT (FIGURE
+
+```
+
+
+
+
+
+

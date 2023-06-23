@@ -1,0 +1,739 @@
+---
+title: "Exploratory Analysis"
+author: "Marc Wettengel"
+date: "06/01/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, echo = TRUE)
+
+```
+
+
+```{r, include = FALSE}
+library(ggplot2)
+library(gghighlight)
+library(dplyr)
+library(ggpubr)
+library(cowplot)
+library(MASS)
+library(psych)
+Monthly_avg <- read.csv("Monthly_avg.csv")
+Data_complete <- read.csv("Data_complete.csv")
+Epiweek_avg <- read.csv("Epiweek_avg.csv")
+Epiweek_avg <- Epiweek_avg[c(2,3,4,5,6,7,8,9,10,12,13,14,15,16,17)]
+
+Monthly_avg$Month <- as.factor(Monthly_avg$Month)
+Data_complete$Month <- as.factor(Data_complete$Month)
+
+Monthly_avg$Year <- as.factor(Monthly_avg$Year)
+Data_complete$Year <- as.factor(Data_complete$Year)
+```
+
+```{r, include = FALSE}
+#Data_april_out <- subset(Data_complete, Month == 4 & outbreak == 1)
+#Data_april_non <- subset(Data_complete, Month == 4 & outbreak == 0)
+#Data_mar_out <- subset(Data_complete, Month == 3 & outbreak == 1)
+#Data_mar_non <- subset(Data_complete, Month == 3 & outbreak == 0)
+#Data_spring <- rbind(Data_april_out, Data_mar_out, Data_april_non, Data_mar_non)
+#Data_spring_non <- rbind(Data_april_non, Data_mar_non)
+
+#Data_nov_out <- subset(Data_complete, Month == 11 & outbreak == 1)
+#Data_nov_non <- subset(Data_complete, Month == 11 & outbreak == 0)
+#Data_dec_out <- subset(Data_complete, Month == 12 & outbreak == 1)
+#Data_dec_non <- subset(Data_complete, Month == 12 & outbreak == 0)
+#Data_fall_out <- rbind(Data_nov_out, Data_dec_out)
+#Data_fall_non <- rbind(Data_nov_non, Data_dec_non)
+```
+
+- Would it make sense to include the years 2020 and 2021 in the exploratory phase bust not with the stat analysis? Logistic regression it could be included (outbreak period), however, poisson should not have these years (pandemic affected the case counts). 
+
+
+
+## Rainfall
+```{r}
+# plot the monthly averages trends for each year.
+ggplot(data=Monthly_avg, aes(x=Month, y=Total_Rain, group = Year, colour = Year)) + 
+  geom_line() + 
+  labs(y= "Rainfall (mm)", x = "Month") +
+  ggtitle("Total Monthly Rainfall") +
+  scale_x_discrete(label = month.abb)
+
+Epiweek_avg$Year <- as.factor(Epiweek_avg$Year)
+Epiweek_avg$epiweek <- as.numeric(Epiweek_avg$epiweek)
+
+ggplot(data=Epiweek_avg, aes(x=epiweek, y=Total_Rain, group = Year, colour = Year)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y= "Rainfall (mm)", x = "Epiweek") +
+  ggtitle("Average Rainfall") +
+  scale_x_continuous(breaks=seq(0,53,5))
+
+
+
+ggplot(data=Epiweek_avg, aes(x=epiweek, y=Temperature, group = Year, colour = Year)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y= "Temperature (C)", x = "Epiweek") +
+  ggtitle("Average Sea Surface Temperature") +
+  scale_x_continuous(breaks=seq(0,53,5))
+
+
+
+ggplot(Data_complete, aes(x = Month, y = Total_Rain)) +
+  geom_boxplot(position = "dodge") + 
+  labs(y= "Rainfall (mm)", x = "Month")
+
+ggplot(Data_complete, aes(x = Month, y = sqrt(Total_Rain))) +
+  geom_boxplot(position = "dodge") + 
+  labs(y= "square root of Rainfall (mm)", x = "Month")
+
+ggplot(Data_complete, aes(x = Month, y = Total_Rain, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw()+
+  labs(y= "Rainfall (mm)", x = "Month")
+
+ggplot(Data_complete, aes(x = Month, y = sqrt(Total_Rain), fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw()+
+  labs(y= "Rainfall (mm)", x = "Month")
+
+ggplot(Data_complete, aes(x = Month, y = sqrt(Total_Rain), fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw() +
+  theme(legend.title = element_blank()) +
+  labs(y= "Rainfall (mm)", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Square Root of Rainfall") +
+  scale_color_manual(labels = c("Non Outbreak", "Outbreak"))
+
+ggplot(Data_complete, aes(x = Month, y = sqrt(Total_Rain), fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw() +
+  theme(legend.title = element_blank()) +
+  labs(y= "Rainfall (mm)", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Square Root of Rainfall") +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"))
+```
+
+### Univariate analysis
+#### April
+```{r}
+#wilcox.test(Data_april_non$Salinity, Data_april_out$Salinity )
+#t.test(Data_april_non$Salinity, Data_april_out$Salinity)
+```
+#### March
+```{r}
+#wilcox.test(Data_mar_non$Salinity, Data_mar_out$Salinity)
+#t.test(Data_mar_non$Salinity, Data_mar_out$Salinity)
+```
+#### March & April 
+```{r}
+#wilcox.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+#t.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+```
+#### November
+```{r}
+#wilcox.test(Data_nov_non$Total_Rain, Data_nov_out$Total_Rain)
+#t.test(Data_nov_non$Total_Rain, Data_nov_out$Total_Rain)
+```
+
+## Ocean Salinity
+```{r}
+# plot the monthly averages trends for each year.
+ggplot(data=Monthly_avg, aes(x=Month, y=Salinity, group = Year, colour = Year)) + 
+  geom_line() + 
+  labs(y= "Salinity (PSU)", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Monthly Average Sea Surface Salinity")
+
+ggplot(Data_complete, aes(x = Month, y = Salinity)) +
+  geom_boxplot(position = "dodge") + 
+  labs(y= "Salinity (PSU)", x = "Month")
+
+
+ggplot(Data_complete, aes(x = Month, y = Salinity, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw()+
+  labs(y= "Salinity (PSU)", x = "Month")
+
+ggplot(data=Epiweek_avg, aes(x=epiweek, y=Salinity, group = Year, colour = Year)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y= "PSU", x = "Epiweek") +
+  ggtitle("Average Salinity") +
+  scale_x_continuous(breaks=seq(0,53,5))
+
+ggplot(Data_complete, aes(x = Month, y = Salinity, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw() +
+  theme(legend.title = element_blank()) +
+  labs(y= "PSU", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Average Salinity - Outbreak vs. Non-outbreak") +
+  scale_color_discrete(labels = c("Non Outbreak", "Outbreak"))
+```
+
+### Univariate analysis
+#### November
+```{r}
+#wilcox.test(Data_nov_non$Salinity, Data_nov_out$Salinity)
+#t.test(Data_nov_non$Salinity, Data_nov_out$Salinity)
+```
+#### December
+```{r}
+#wilcox.test(Data_dec_non$Salinity, Data_dec_out$Salinity)
+#t.test(Data_dec_non$Salinity, Data_dec_out$Salinity)
+```
+#### November & December
+```{r}
+#wilcox.test(Data_fall_non$Salinity, Data_fall_out$Salinity)
+#t.test(Data_fall_non$Salinity, Data_fall_out$Salinity)
+```
+
+
+## Sea Surface Temperature 
+```{r}
+lagdata <- read.csv("laggeddata.csv")
+# plot the monthly averages trends for each year.
+ggplot(data=Monthly_avg, aes(x=Month, y=Temperature, group = Year, colour = Year)) + 
+  geom_line() + 
+  labs(y= "Temperature (C)", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Monthly Average Sea Surface Temperature")
+
+ggplot(Data_complete, aes(x = Month, y = Temperature)) +
+  geom_boxplot(position = "dodge") + 
+  labs(y= "Temperature (C)", x = "Month")
+
+
+ggplot(Data_complete, aes(x = Month, y = Temperature, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw() +
+  theme(legend.title = element_blank()) +
+  labs(y= "Temperature (C)", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Sea Surface Temperature - Calendar Year") +
+  scale_color_discrete(labels = c("Non Outbreak", "Outbreak"))
+
+lagdata2 <- na.omit(lagdata)
+lagdata3 <- lagdata2
+lagdata3$yearid <- as.factor(lagdata3$yearid)
+
+ggplot(data=lagdata3, aes(x=week, y=Total_Rain, group = yearid, colour = yearid)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y= "Rainfall (mm)", x = "Epiweek") +
+  ggtitle("Average Rainfall") +
+  scale_x_continuous(breaks=seq(0,53,5))
+  
+
+
+#<- ggplot(Epiweek_avg, aes(x = study_week, y = Temperature, color = factor(Outbreak))) +
+#  geom_path(aes(group=1), linewidth = 1.2) +
+#  theme_classic() +
+#  theme(axis.line = element_line(colour = 'black', size = 1.5), 
+#        axis.ticks = element_line(colour = "black", size = 1.5),
+#        axis.text=element_text(size=20),
+#        axis.title=element_text(size=25),
+#        legend.title=element_blank(),
+#        legend.key.size = unit(2, 'cm'),
+#        legend.text = element_text(size=25))+
+#  ylab("Sea Surface Temperature (C)")+
+#  xlab("Study Week") +
+#  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+#             linetype = "dotted", color = "blue", linewidth = 1.4) +
+#  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red")) 
+
+```
+
+### Univariate analysis
+#### April
+```{r}
+#wilcox.test(Data_april_non$Temperature, Data_april_out$Temperature)
+#t.test(Data_april_non$Temperature, Data_april_out$Temperature)
+```
+#### March
+```{r}
+#wilcox.test(Data_mar_non$Temperature, Data_mar_out$Temperature)
+#t.test(Data_mar_non$Temperature, Data_mar_out$Temperature)
+```
+#### March & April 
+```{r}
+#wilcox.test(Data_spring_non$Temperature, Data_spring_out$Temperature)
+#t.test(Data_spring_non$Temperature, Data_spring_out$Temperature)
+```
+#### November
+```{r}
+#wilcox.test(Data_nov_non$Temperature, Data_nov_out$Temperature)
+#t.test(Data_nov_non$Temperature, Data_nov_out$Temperature)
+```
+
+## Photosynthetically Active Radiation 
+```{r}
+# plot the monthly averages trends for each year.
+ggplot(data=Monthly_avg, aes(x=Month, y=PAR, group = Year, colour = Year)) + 
+  geom_line() + 
+  labs(y= "Monthly average PAR (?)", x = "Month")
+
+ggplot(Data_complete, aes(x = Month, y = PAR)) +
+  geom_boxplot(position = "dodge") + 
+  labs(y= "PAR (?)", x = "Month")
+
+
+ggplot(Data_complete, aes(x = Month, y = PAR, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw()+
+  labs(y= "PAR (?)", x = "Month")
+
+ggplot(data=Epiweek_avg, aes(x=epiweek, y=PAR, group = Year, colour = Year)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y = expression(paste("Einstein ", m^{2}, " per day")),
+       x = "Epiweek") +
+  ggtitle("Average Photosynthetically Available Radiation") +
+  scale_x_continuous(breaks=seq(0,53,5))
+
+ggplot(Data_complete, aes(x = Month, y = Temperature, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw() +
+  theme(legend.title = element_blank()) +
+  labs(y = expression(paste("Einstein ", m^{2}, " per day")),
+       x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Average PAR - Outbreak vs. Non-outbreak") +
+  scale_color_discrete(labels = c("Non Outbreak", "Outbreak"))
+
+
+
+```
+
+### Univariate analysis
+### April 
+```{r}
+#wilcox.test(Data_april_non$PAR, Data_april_out$PAR)
+#t.test(Data_april_non$PAR, Data_april_out$PAR)
+```
+#### March
+```{r}
+#wilcox.test(Data_mar_non$PAR, Data_mar_out$PAR)
+#t.test(Data_mar_non$PAR, Data_mar_out$PAR)
+```
+#### March & April
+```{r}
+#wilcox.test(Data_spring_non$PAR, Data_spring_out$PAR)
+#t.test(Data_spring_non$PAR, Data_spring_out$PAR)
+```
+#### November
+```{r}
+#wilcox.test(Data_nov_non$PAR, Data_nov_out$PAR)
+#t.test(Data_nov_non$PAR, Data_nov_out$PAR)
+```
+#### December
+```{r}
+#wilcox.test(Data_dec_non$PAR, Data_dec_out$PAR)
+#t.test(Data_dec_non$PAR, Data_dec_out$PAR)
+```
+#### November & Decmeber
+```{r}
+#wilcox.test(Data_fall_non$PAR, Data_fall_out$PAR)
+#t.test(Data_fall_non$PAR, Data_fall_out$PAR)
+```
+
+## Wind 
+```{r}
+# plot the monthly averages trends for each year.
+ggplot(data=Monthly_avg, aes(x=Month, y=WSPD, group = Year, colour = Year)) + 
+  geom_line() + 
+  labs(y= "Monthly average wind (m/s)", x = "Month")
+
+ggplot(Data_complete, aes(x = Month, y = WSPD)) +
+  geom_boxplot(position = "dodge") + 
+  labs(y= "Wind (m/s)", x = "Month")
+
+
+ggplot(Data_complete, aes(x = Month, y = WSPD, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw()+
+  labs(y= "Wind (m/s)", x = "Month")
+
+ggplot(data=Epiweek_avg, aes(x=epiweek, y=WSPD, group = Year, colour = Year)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y= "m/s", x = "Epiweek") +
+  ggtitle("Average Wind Speed") +
+  scale_x_continuous(breaks=seq(0,53,5))
+
+ggplot(Data_complete, aes(x = Month, y = WSPD, fill = factor(outbreak))) +
+  geom_boxplot(position = "dodge") + 
+  theme_bw() +
+  theme(legend.title = element_blank()) +
+  labs(y= "m/s", x = "Month") +
+  scale_x_discrete(label = month.abb) +
+  ggtitle("Average Wind Speed - Outbreak vs. Non-outbreak") +
+  scale_color_discrete(labels = c("Non Outbreak", "Outbreak"))
+```
+
+### Univariate analysis
+#### April
+```{r}
+#wilcox.test(Data_april_non$WSPD, Data_april_out$WSPD)
+#t.test(Data_april_non$WSPD, Data_april_out$WSPD)
+```
+#### November
+```{r}
+#wilcox.test(Data_nov_non$WSPD, Data_nov_out$WSPD)
+#t.test(Data_nov_non$WSPD, Data_nov_out$WSPD)
+```
+
+## Case Count
+```{r}
+ggplot(data=Epiweek_avg, aes(x=epiweek, y=NVcount, group = Year, colour = Year)) + 
+  geom_line() +
+  theme(
+    axis.line = element_line(colour = "black", 
+                      size = 0.5, linetype = "solid")) +
+  labs(y= "Number of Cases", x = "Epiweek") +
+  ggtitle("Community Norovirus Case Count") +
+  scale_x_continuous(breaks=seq(0,53,5))
+
+
+```
+
+
+## Time series plots
+```{r, include = FALSE}
+# Add in the study week
+Epiweek_avg$study_week<-1:nrow(Epiweek_avg)
+Epiweek_avg_test <- Epiweek_avg
+Epiweek_avg <- Epiweek_avg[,c(1,2,16,6,15,3,4,5,7,8,9,10,11,12,13,14)]
+Epiweek_avg$Outbreak <- ceiling(Epiweek_avg$Outbreak)
+Epiweek_avg$wdir <- ifelse(Epiweek_avg$WDIR < 0, 360 + Epiweek_avg$WDIR, Epiweek_avg$WDIR)
+# Fill in the missing value for PAR using par specific data set
+# Epiweek_avg$PAR[is.na(Epiweek_avg$PAR)] <- 4.11
+# Epiweek_avg <- Epiweek_avg[,c(1,2,3,4,5,6,7,8,9,10,12,13,14,15,16,17)]
+
+```
+
+```{r, fig.width=20, fig.height=20, echo=FALSE}
+
+#library(cowplot)
+
+p1 <- ggplot(Epiweek_avg, aes(x = study_week, y = NVcount, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(), axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5), 
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        legend.title=element_blank(),
+        legend.key.size = unit(2, 'cm'),
+        legend.text = element_text(size=20),
+        legend.position = "top") +
+  ylab("Community Case Count")+
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red"))
+
+p2 <- ggplot(Epiweek_avg, aes(x = study_week, y = Total_Rain, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(), axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5), 
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        legend.title=element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.text = element_text(size=10),
+        legend.position = "none")+
+  ylab("Rainfall (mm)")+
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red"))
+
+p3 <- ggplot(Epiweek_avg, aes(x = study_week, y = Salinity, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(), axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5), 
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        legend.title=element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.text = element_text(size=10),
+        legend.position = "none")+
+  ylab("Salinity (PSU)")+
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red"))
+
+p4 <- ggplot(Epiweek_avg, aes(x = study_week, y = Temperature, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(), axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5), 
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        legend.title=element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.text = element_text(size=10),
+        legend.position = "none")+
+  ylab("Sea Surface Temperature (C)")+
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red")) 
+
+p5 <- ggplot(Epiweek_avg, aes(x = study_week, y = PAR, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(), axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5), 
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        legend.title=element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.text = element_text(size=10),
+        legend.position = "none")+
+  ylab("PAR (Einstein)")+
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red"))
+
+p6 <- ggplot(Epiweek_avg, aes(x = study_week, y = wdir, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.title.x=element_blank(), axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5), 
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
+        legend.title=element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.text = element_text(size=10),
+        legend.position = "none")+
+  ylab("Wind Direction (degrees)")+
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red"))
+
+p7 <- ggplot(Epiweek_avg, aes(x = study_week, y = WSPD, color = factor(Outbreak))) +
+  geom_path(aes(group=1)) +
+  theme_classic() +
+  theme(axis.line = element_line(colour = 'black', size = 1.5), 
+        axis.ticks = element_line(colour = "black", size = 1.5),
+        axis.text = element_text(size=12),
+        axis.title.y=element_text(size=12),
+        axis.title.x=element_text(size=20),
+        legend.title=element_blank(),
+        legend.key.size = unit(1, 'cm'),
+        legend.text = element_text(size=10),
+        legend.position = "none")+
+  ylab("Wind Speed (m/s)")+
+  xlab("Study Week") +
+  geom_vline(xintercept=c(54, 62, 106, 215, 228, 580, 582, 728, 747, 797, 802), 
+             linetype = "dotted", color = "blue", linewidth = 1) +
+  scale_colour_manual(name = "Outbreak", labels = c("Non Outbreak", "Outbreak"), values = c("black", "red"))
+
+pp <- list(p1, p2, p3, p4, p5, p7)
+plot_grid(plotlist=pp, ncol=1, align='v')
+```
+
+
+```{r, fig.width=20, fig.height=22, echo=FALSE}
+
+p11 <- ggplot(Epiweek_avg, aes(x = epiweek, y = NVcount, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("NV Count")+
+  scale_colour_manual(values = c("grey", "red"))
+
+p12 <- ggplot(Epiweek_avg, aes(x = epiweek, y = Total_Rain, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("Daily avg. Rainfall")+
+  scale_colour_manual(values = c("grey", "red"))
+
+p13 <- ggplot(Epiweek_avg, aes(x = epiweek, y = Salinity, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("Avg. Salinity")+
+  scale_colour_manual(values = c("grey", "red"))
+
+p14 <- ggplot(Epiweek_avg, aes(x = epiweek, y = Temperature, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("Avg. SST")+
+  scale_colour_manual(values = c("grey", "red"))
+
+p15 <- ggplot(Epiweek_avg, aes(x = epiweek, y = PAR, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("Avg. PAR")+
+  scale_colour_manual(values = c("grey", "red"))
+
+p16 <- ggplot(Epiweek_avg, aes(x = epiweek, y = WSPD, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("Avg. WSPD")+
+  scale_colour_manual(values = c("grey", "red"))
+
+p17 <- ggplot(Epiweek_avg, aes(x = epiweek, y = WDIR, group = Year, color = factor(Outbreak))) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.title.x=element_blank())+
+  ylab("Avg. WDIR")+
+  scale_colour_manual(values = c("grey", "red"))
+
+pp1 <- list(p11, p12, p13, p14, p15, p16, p17)
+plot_grid(plotlist=pp1, ncol=1, align='v')
+```
+
+
+### DLNM Package
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.rain <- crossbasis(Epiweek_avg$Total_Rain, lag = 12, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.rain)
+
+model1 <- glm(Outbreak ~ cb1.rain , family="binomial", Epiweek_avg)
+
+pred.cb1.rain <- crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T)
+
+plot(pred.cb1.rain, "slices", var = 1, col = 3, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+plot(pred.cb1.rain, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+plot(pred.cb1.rain, "slices", var = 1, col = 3, cumul = TRUE)
+
+plot(pred.cb1.rain, xlab="Rainfall", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of rainfall effect")
+
+plot(pred.cb1.rain, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="Rainfall",ylab="Lag")) 
+```
+
+```{r}
+cb2.rain <- crossbasis(Epiweek_avg$Total_Rain, lag = 12, 
+                       argvar=list(type="thr", thr = 5), 
+                       arglag=list(type="integer"))
+
+summary(cb2.rain)
+
+model2 <- glm(Outbreak ~ cb2.rain , family="binomial", Epiweek_avg)
+
+pred.cb2.rain <- crosspred(cb2.rain, model2, from = 0, to = 30, cumul = T)
+
+plot(pred.cb2.rain, "slices", var = 1, col = 3, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+plot(pred.cb2.rain, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+plot(pred.cb2.rain, "slices", var = 1, col = 3, cumul = TRUE)
+
+plot(pred.cb2.rain, xlab="Rainfall", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of rainfall effect")
+
+plot(pred.cb2.rain, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="Rainfall",ylab="Lag")) 
+```
+
+
+
+```{r, warnings = FALSE}
+cb3.rain <- crossbasis(Epiweek_avg$Total_Rain, lag=12, 
+                      argvar=list(fun="poly", degree = 4),
+                      arglag=list(fun="integer")
+                      )
+
+model3 <- glm(Outbreak ~  cb3.rain, family="binomial", Epiweek_avg)
+
+pred.cb3.rain <- crosspred(cb3.rain, model3, from = 0, to = 30, cumul = T)
+
+plot(pred.cb3.rain, "slices", var = 1, col = 3, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+plot(pred.cb3.rain, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+plot(pred.cb3.rain, "slices", var = 1, col = 3, cumul = TRUE)
+
+
+
+plot(pred.cb3.rain, xlab="Rainfall", zlab="RR", theta=300, phi=30, lphi=30,
+    main="3D graph of rainfall effect")
+
+plot(pred.cb3.rain, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="Rainfall",ylab="Lag"))  
+```
+
+
+### CROSS SEC MODEL
+```{r}
+Data_spring1 <- filter(Epiweek_avg, epiweek == 13 |
+                         epiweek == 14 |
+                         epiweek == 15 |
+                         epiweek == 16 |
+                         epiweek == 17)
+Data_spring1$Outbreak <- ceiling(Data_spring1$Outbreak)
+Data_spring1$wdir <- ifelse(Data_spring1$WDIR < 0, 360 + Data_spring1$WDIR, Data_spring1$WDIR)
+Data_spring1$wdir <- as.factor(ifelse(Data_spring1$wdir >= 215 | Data_spring1$wdir <= 35, 1, 0))
+
+crossmodel <- glm(Outbreak ~ Total_Rain + Salinity + PAR  + WSPD + NVcount + wdir, 
+               family = "binomial", data = Data_spring1, na.action = na.fail)
+summary(crossmodel)
+step(crossmodel)
+```
+
+```{r}
+#Epiweek_avg_test$wdir <- ifelse(Epiweek_avg_test$WDIR < 0, 360 + Epiweek_avg_test$WDIR, Epiweek_avg_test$WDIR)
+library(openair)
+windRose(
+  Epiweek_avg,
+  ws = "WSPD",
+  wd = "wdir")
+hist(Epiweek_avg$wdir, breaks = 100, main = "Wind direction distribution", xlab = "Degrees from north")
+
+#305 and 125
+# Perpendicular to above
+#215 and 35
+```
+
+#Correlation plots
+```{r}
+library(psych)
+library(corrplot)
+data <- Epiweek_avg[, c(5,6,9,10,11,12,17)]
+data <- na.omit(data)
+names(data) <- c("Case Count", "Rainfall", "Salinity", "Sea Temp.", "PAR", "Wind Speed", "Wind Direction")
+
+
+
+corrplot.mixed(cor(data),
+               lower = "number", 
+               upper = "circle",
+               tl.col = "black")
+```

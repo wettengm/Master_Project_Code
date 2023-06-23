@@ -1,0 +1,237 @@
+---
+title: "Regression Analysis"
+author: "Marc Wettengel"
+date: "09/01/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, include = FALSE}
+library(ggplot2)
+library(MASS)
+library(dplyr)
+
+Monthly_avg <- read.csv("Monthly_avg.csv")
+Data_complete <- read.csv("Data_complete.csv")
+Epiweek_avg <- read.csv("Epiweek_avg.csv")
+
+Monthly_avg$Month <- as.factor(Monthly_avg$Month)
+Data_complete$Month <- as.factor(Data_complete$Month)
+
+Monthly_avg$Year <- as.factor(Monthly_avg$Year)
+Data_complete$Year <- as.factor(Data_complete$Year)
+
+Monthly_avg$outbreak <- ceiling(Monthly_avg$outbreak)
+```
+
+```{r, include = FALSE}
+data_log_spring <- subset(Monthly_avg, Month == 3 | Month == 4)
+data_log_march <- subset(Monthly_avg, Month == 3)
+data_log_apr <- subset(Monthly_avg, Month == 4)
+```
+
+```{r, include = FALSE}
+monthly_avg <- Monthly_avg[c(1,2,3,4,5,6,7,8,9,10,11,14)]
+
+jan_month <- subset(monthly_avg, Month == 1)
+colnames(jan_month)[-1] <- paste0(colnames(jan_month)[-1], "_jan")
+
+feb_month <- subset(monthly_avg, Month == 2)
+colnames(feb_month)[-1] <- paste0(colnames(feb_month)[-1], "_feb")
+
+mar_month <- subset(monthly_avg, Month == 3)
+colnames(mar_month)[-1] <- paste0(colnames(mar_month)[-1], "_mar")
+
+apr_month <- subset(monthly_avg, Month == 4)
+colnames(apr_month)[-1] <- paste0(colnames(apr_month)[-1], "_apr")
+
+data_logistic <- left_join(jan_month, feb_month)
+data_logistic <- left_join(data_logistic, mar_month)
+data_logistic <- left_join(data_logistic, apr_month)
+ 
+
+```
+
+# Logistic
+
+### March & April combined
+```{r}
+log_model1 <- glm(outbreak ~ Total_Rain + Salinity + Temperature + PAR + WSPD,
+                  family = 'quasibinomial',
+                  data = data_log_spring)
+summary(log_model1)
+
+log_model2 <- glm(outbreak ~ Total_Rain + Salinity + Temperature + PAR + WSPD,
+                  family = 'binomial',
+                  data = data_log_spring)
+summary(log_model2)
+
+step(log_model2)
+```
+
+### April with March covariates
+```{r}
+log_model3 <- glm(outbreak_apr ~ Total_Rain_apr + Salinity_apr + Temperature_apr + 
+                    PAR_apr + WSPD_apr + Total_Rain_mar + Salinity_mar + Temperature_mar
+                  + PAR_mar + WSPD_mar,
+                  family = 'binomial',
+                  data = data_logistic)
+summary(log_model3)
+step(log_model3)
+```
+
+### April with November covariates
+```{r}
+# Place holder
+# Need to shift November covariates 1 year later
+```
+
+### Based off univariate analysis for March & April
+```{r}
+poisson_model4 <- glm(NVcount ~ Total_Rain + Temperature + PAR, 
+                 family = 'poisson', 
+                 data = data_poisson)
+step(poisson_model4)
+```
+
+
+
+
+
+
+
+# Poisson
+
+```{r, include = FALSE}
+data_poisson <- subset(Epiweek_avg, epiweek == 10 | epiweek ==11 | epiweek ==12 |
+                         epiweek == 13 | epiweek == 14 | epiweek == 15 | 
+                         epiweek == 16  | epiweek == 17)
+data_poisson <- na.omit(data_poisson)
+
+data_poisson_comp <- subset(Epiweek_avg, epiweek == 1 | epiweek == 2 | 
+                         epiweek == 3 | epiweek == 4 | epiweek == 5 | epiweek == 6 |
+                           epiweek == 7 | epiweek == 8 | epiweek == 9 | 
+                           epiweek == 10 | epiweek ==11 | epiweek ==12 |
+                         epiweek == 13 | epiweek == 14 | epiweek == 15 | 
+                         epiweek == 16 | epiweek == 17)
+data_poisson_comp <- na.omit(data_poisson_comp)
+
+```
+
+### March & April combined
+```{r}
+poisson_model0 <- glm(NVcount ~ Total_Rain + Salinity + Temperature + PAR + WSPD, 
+                 family = 'quasipoisson', 
+                 data = data_poisson)
+summary(poisson_model0)
+
+poisson_model1 <- glm(NVcount ~ Total_Rain + Salinity + Temperature + PAR + WSPD, 
+                 family = 'poisson', 
+                 data = data_poisson)
+
+summary(poisson_model1)
+step(poisson_model1)
+```
+
+### January through April combined
+```{r}
+poisson_model2 <- glm(NVcount ~ Total_Rain + Salinity + Temperature + PAR + WSPD, 
+                 family = 'quasipoisson', 
+                 data = data_poisson_comp)
+
+summary(poisson_model2)
+
+poisson_model3 <- glm(NVcount ~ Total_Rain + Salinity + Temperature + PAR + WSPD, 
+                 family = 'poisson', 
+                 data = data_poisson_comp)
+
+summary(poisson_model3)
+step(poisson_model3)
+```
+
+### Based off univariate analysis 
+```{r}
+poisson_model4 <- glm(NVcount ~ Salinity + Temperature + PAR, 
+                 family = 'poisson', 
+                 data = data_poisson_comp)
+
+summary(poisson_model4)
+step(poisson_model4)
+```
+
+
+### Lag model
+```{r, include = FALSE}
+data_poisson_lag <- subset(Epiweek_avg, epiweek == 1 | epiweek == 2 | 
+                         epiweek == 3 | epiweek == 4 | epiweek == 5 | epiweek == 6 |
+                           epiweek == 7 | epiweek == 8 | epiweek == 9 | 
+                           epiweek == 10 | epiweek ==11 | epiweek ==12 |
+                         epiweek == 13 | epiweek == 14 | epiweek == 15 | 
+                         epiweek == 16 | epiweek == 17 | epiweek == 53 |
+                           epiweek == 52 |epiweek == 51 | epiweek == 50 | 
+                           epiweek == 49 | epiweek == 48 | epiweek == 47 |
+                           epiweek == 46 | epiweek == 45)
+data_poisson_lag <- na.omit(data_poisson_lag)
+```
+
+```{r}
+poisson_model5 <- glm(NVcount ~ Total_Rain + Salinity + Temperature + PAR + WSPD, 
+                 family = 'poisson', 
+                 lag = 3,
+                 data = data_poisson_lag)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Summary
+
+- Difference in environmental conditions between outbreaks and non-outbreaks primarily in March, April and November
+- Some monthly variation in which environmental condition showed differences, however fairly consistent
+- Used t-tests and wilcox test to see if difference is significant 
+
+- Restricted the logistic regression analysis to March and April
+    - March & April combined has Wind as a significant predictor
+    - April outbreaks with March covariates did not converge except for wind_apr and rain_apr
+- November will be included in future rendition 
+- Used univariate analysis to select covariates, after then using stepwise selection, Temperature and PAR were significant predictors of outbreak periods
+- *No lag has been included 
+
+
+- For poisson regression, some over dispersion is present (quasipoisson)
+- For model selection used regular poisson (stepwise with AIC)
+- Did not use march environmental conditions to predict future outbreaks 
+    - Epiweeks change & cannot determine when March covariate predicts April case count 
+- Lag model is to be created with time frame spanning from November to April to account for earlier environmental conditions
+
+- Based off scatterplots, created a poisson model (PAR, SST and salinity)
+    - All of the environmental conditions were significant after stepwise selection
+    - Again, no lag was included in this
+
+
+

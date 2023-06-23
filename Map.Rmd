@@ -1,0 +1,19 @@
+---
+title: "Map"
+author: "Marc Wettengel"
+date: "03/04/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tmap)
+data("World")
+tm_shape(World) +
+    tm_polygons("HPI")
+
+
+```

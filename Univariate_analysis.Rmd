@@ -1,0 +1,140 @@
+---
+title: "Univariate Analysis"
+author: "Marc Wettengel"
+date: "09/01/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(MASS)
+library(effects) 
+library(MuMIn)
+library(ggplot2)
+library(dplyr)
+library(cvAUC)
+```
+
+```{r, include = FALSE}
+library(ggplot2)
+library(MASS)
+
+Monthly_avg <- read.csv("Monthly_avg.csv")
+Data_complete <- read.csv("Data_complete.csv")
+Epiweek_avg <- read.csv("Epiweek_avg.csv")
+
+Monthly_avg$Month <- as.factor(Monthly_avg$Month)
+Data_complete$Month <- as.factor(Data_complete$Month)
+
+Monthly_avg$Year <- as.factor(Monthly_avg$Year)
+Data_complete$Year <- as.factor(Data_complete$Year)
+
+Data_april_out <- subset(Data_complete, Month == 4 & outbreak == 1)
+Data_april_non <- subset(Data_complete, Month == 4 & outbreak == 0)
+Data_mar_out <- subset(Data_complete, Month == 3 & outbreak == 1)
+Data_mar_non <- subset(Data_complete, Month == 3 & outbreak == 0)
+Data_spring_out <- rbind(Data_april_out, Data_mar_out)
+Data_spring_non <- rbind(Data_april_non, Data_mar_non)
+
+Data_nov_out <- subset(Data_complete, Month == 11 & outbreak == 1)
+Data_nov_non <- subset(Data_complete, Month == 11 & outbreak == 0)
+Data_dec_out <- subset(Data_complete, Month == 12 & outbreak == 1)
+Data_dec_non <- subset(Data_complete, Month == 12 & outbreak == 0)
+Data_fall_out <- rbind(Data_nov_out, Data_dec_out)
+Data_fall_non <- rbind(Data_nov_non, Data_dec_non)
+```
+
+
+## Rainfall
+
+#### April
+```{r}
+wilcox.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+t.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+```
+#### March
+```{r}
+wilcox.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+t.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+```
+#### March & April 
+```{r}
+wilcox.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+t.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+```
+
+## Ocean salinity
+
+#### November
+```{r}
+wilcox.test(Data_nov_non$Salinity, Data_nov_out$Salinity)
+t.test(Data_nov_non$Salinity, Data_nov_out$Salinity)
+```
+#### December
+```{r}
+wilcox.test(Data_dec_non$Salinity, Data_dec_out$Salinity)
+t.test(Data_dec_non$Salinity, Data_dec_out$Salinity)
+```
+#### November & December
+```{r}
+wilcox.test(Data_fall_non$Salinity, Data_fall_out$Salinity)
+t.test(Data_fall_non$Salinity, Data_fall_out$Salinity)
+```
+
+## Sea surface temperature
+
+#### April
+```{r}
+wilcox.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+t.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+```
+#### March
+```{r}
+wilcox.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+t.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+```
+#### March & April 
+```{r}
+wilcox.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+t.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+```
+
+
+## Photosynthetically Active Radiation 
+
+###April 
+```{r}
+wilcox.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+t.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+```
+#### March
+```{r}
+wilcox.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+t.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+```
+#### March & April
+```{r}
+wilcox.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+t.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+```
+
+## Wind
+
+#### April
+```{r}
+wilcox.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+t.test(Data_april_non$Total_Rain, Data_april_out$Total_Rain)
+```
+#### March
+```{r}
+wilcox.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+t.test(Data_mar_non$Total_Rain, Data_mar_out$Total_Rain)
+```
+#### March & April
+```{r}
+wilcox.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+t.test(Data_spring_non$Total_Rain, Data_spring_out$Total_Rain)
+```

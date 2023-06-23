@@ -1,0 +1,176 @@
+---
+title: "Regression Models with Cumulative Lag Effect"
+author: "Marc Wettengel"
+date: "3/7/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(MASS)
+#write.csv(laggeddata, "laggeddata.csv")
+lagdata <- read.csv("laggeddata.csv")
+lagdata <- lagdata[c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22)]
+lagdata$Outbreak <- as.factor(ceiling(lagdata$Outbreak))
+names(lagdata)
+#lagdataapr <- subset(lagdata, epiweek == 10 | epiweek == 11 |
+#                       epiweek == 12 | epiweek == 13 | epiweek == 14 |
+#                       epiweek == 15 | epiweek == 16 | epiweek == 17 |
+#                       epiweek == 18)
+
+
+lagdata$WDIR <- ifelse(lagdata$WDIR < 0, 360 + lagdata$WDIR, lagdata$WDIR)
+lagdata$wdir <- as.factor(ifelse(lagdata$WDIR >= 215 | lagdata$WDIR <= 35, 1, 0))
+lagdata2 <- lagdata
+lagdata2 <- na.omit(lagdata2)
+
+```
+
+### ignore this
+```{r}
+#library(MuMIn)
+
+lagdata2 <- na.omit(lagdata)
+modelts <- glm(Outbreak ~ Total_Rain7 + Salinity + PAR + Temperature6 + WSPD7 + NVcount8, 
+               family = "binomial", data = lagdata, na.action = na.fail)
+
+summary(modelts)
+#exp(modelts$coefficients)
+#step(modelts)
+#output <- dredge(modelts)
+#output
+```
+
+
+# Longitudinal model with random effect
+```{r}
+library(lme4)
+#lagdata$Total_Rain7 <- ifelse(lagdata$Total_Rain7 == 0.83, 3.12, lagdata$Total_Rain7)
+lagdata_test <- lagdata
+lagdata_test$yearid <- as.factor(lagdata_test$yearid)
+
+glmm1 <- glmer(Outbreak ~ Total_Rain7 + Salinity + PAR + Temperature + WSPD7 + NVcount8 + wdir +(1|yearid), 
+               family = binomial(link = "logit"), 
+               data = lagdata)
+#glmm2 <- glmer(Outbreak ~ Total_Rain7 + Salinity + PAR8 + Temperature6 + WSPD7 + NVcount8 + (1|yearid), 
+#               family = binomial(link = "logit"), 
+#               data = lagdata)
+library(MASS)
+glmm2 <- glmmPQL(Outbreak ~ Total_Rain7 + Salinity + PAR + Temperature + WSPD7 + NVcount8 + wdir, random = ~ 1|yearid, 
+               family = binomial(link = "logit"), 
+               data = lagdata)
+# penalized quasi likelihood
+summary(glmm1)
+summary(glmm2)
+#drop1(glmm1)
+#qqnorm(glmm1)
+#summary(glmm2)
+```
+# Longitudinal model with random effect but with lag 15 for rainfall
+```{r}
+glmm3 <- glmmPQL(Outbreak ~ Total_Rain15 + Salinity + Temperature + WSPD7 + NVcount8 + wdir, random = ~ 1|yearid, 
+               family = binomial(link = "logit"), 
+               data = lagdata2)
+# penalized quasi likelihood
+
+summary(glmm3)
+glmm3$coefficients
+step(glmm3)
+glmm4 <- glmer(Outbreak ~ Total_Rain15 + Salinity + Temperature + WSPD7 + NVcount8 + wdir +(1|yearid), 
+               family = binomial(link = "logit"), 
+               data = lagdata2)
+summary(glmm4)
+dredge(glmm4)
+```
+
+
+# Longitudinal model without random effect
+```{r}
+lagdata$yearid <- as.factor(lagdata$yearid)
+dat <- groupedData(Outbreak ~ Total_Rain7 + Salinity + PAR8 + Temperature6 + WSPD7 + NVcount8 | yearid, data = lagdata)
+
+lagdata2 <- na.omit(lagdata)
+modelts <- glm(Outbreak ~ Total_Rain7 + Salinity + PAR8 + Temperature6 + WSPD7 + NVcount8, 
+               family = "binomial", data = lagdata, na.action = na.fail)
+
+summary(modelts)
+exp(modelts$coefficients)
+step(modelts)
+output <- dredge(modelts)
+output
+```
+
+### GEE
+```{r}
+library(gee)
+
+fit1 <- gee(Outbreak ~ Total_Rain15 + Salinity + Temperature + WSPD7 + NVcount8 + wdir, id=yearid, data = lagdata2, family = "binomial", corstr = "exchangeable")
+summary(fit1)
+```
+
+
+
+
+
+# Mdoel diagnostics:
+# fit fitted curve
+# Normal QQ plot
+
+
+
+
+
+# Explain that not all models will hold. Not sure x% of the time the model will hold and how it impacts the final results. This is why we try multiple models and compare results. 
+
+# Spatial temporal model: future work b/c this includes potential spatial effect
+# latent characteristic of year is the random effect term. 
+# GEE (generalized estimated equation) model as an alternative. Doesn't assume any distribution. 
+
+
+
+
+################################## CROSS-SECTIONAL MODELS
+
+```{r}
+crosssecdata <- Epiweek_avg
+
+
+crosssecdata$WDIR <- as.factor(ifelse(crosssecdata$wdir >= 215 | crosssecdata$wdir <= 35, 1, 0))
+crosssecdata <- na.omit(crosssecdata)
+
+crosssecdata2 <- subset(crosssecdata, epiweek == 13 |
+                          epiweek == 14 |
+                          epiweek == 15 |
+                          epiweek == 16 |
+                          epiweek == 17 |
+                          epiweek == 18 )
+
+```
+
+```{r}
+model1 <- glm(Outbreak ~ Total_Rain + Salinity + PAR + Temperature + WSPD + WDIR + NVcount, 
+               family = "binomial", data = crosssecdata2, na.action = na.fail)
+
+summary(model1)
+exp(model1$coefficients)
+
+model2 <- glm(Outbreak ~ Total_Rain + Salinity + PAR + WSPD + WDIR + NVcount, 
+               family = "binomial", data = crosssecdata2, na.action = na.fail)
+
+summary(model2)
+exp(model2$coefficients)
+
+model3 <- glm(Outbreak ~ Total_Rain + Salinity + Temperature + WSPD + WDIR + NVcount, 
+               family = "binomial", data = crosssecdata2, na.action = na.fail)
+
+summary(model3)
+exp(model3$coefficients)
+```
+
+
+
+

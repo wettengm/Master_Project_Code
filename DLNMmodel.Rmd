@@ -1,0 +1,133 @@
+---
+title: "DLNM"
+author: "Marc Wettengel"
+date: "3/23/2023"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, warnings = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(dlnm)
+library(splines)
+
+Epiweek_avg <- read.csv("Epiweek_avg.csv")
+Epiweek_avg <- Epiweek_avg[c(2,3,4,5,6,7,8,9,10,12,13,14,15,16,17)]
+
+# Add in the study week
+Epiweek_avg$study_week<-1:nrow(Epiweek_avg)
+Epiweek_avg_test <- Epiweek_avg
+Epiweek_avg <- Epiweek_avg[,c(1,2,16,6,15,3,4,5,7,8,9,10,11,12,13,14)]
+Epiweek_avg$Outbreak <- ceiling(Epiweek_avg$Outbreak)
+```
+
+# Rainfall
+
+```{r}
+library(dlnm)
+library(splines)
+#vignette("dlnmOverview") #for more information on the package
+#testdlnm <- crossbasis(Epiweek_avg$Total_Rain, lag = 12) 
+
+# Assuming Rainfall has a linear relationship
+# lag structure is using unconstrained function 
+cb1.rain <- crossbasis(Epiweek_avg$Total_Rain, lag = 15, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.rain)
+
+model1 <- glm(Outbreak ~ cb1.rain , family="binomial", Epiweek_avg)
+#glm(Outbreak ~ cb1.rain , family="quasibinomial", Epiweek_avg)
+summary(model1)
+pred.cb1.rain <- crosspred(cb1.rain, model1, at = 0:30, bylag = 1, cumul = T)
+# crosspred(cb1.rain, model1, from = 0, to = 30, bylag = 1, cumul = T) # yields the same results
+
+
+plot(pred.cb1.rain, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.rain, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.rain, "slices", var = 1, col = 6, cumul = TRUE)
+
+
+plot(pred.cb1.rain, "contour", xlab="Rainfall", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="Rainfall",ylab="Lag")) 
+```
+
+# SST
+
+```{r}
+library(dlnm)
+library(splines)
+
+cb1.sst <- crossbasis(Epiweek_avg$Temperature, lag = 15, 
+                       argvar=list(type="lin"), 
+                       arglag=list(type="integer"))
+
+summary(cb1.sst)
+
+modelsst <- glm(Outbreak ~ cb1.sst , family="binomial", Epiweek_avg)
+
+
+pred.cb1.sst <- crosspred(cb1.sst, modelsst, at = 0:16, bylag = 1, cumul = T)
+
+
+plot(pred.cb1.sst, "slices", var = 1, col = 6, ci.arg=list(density=15,lwd=2), ci.level=0.80)
+
+plot(pred.cb1.sst, "slices", var = 1, ci = "bars", type="p", col=2, pch=19,
+    ci.level=0.80)
+
+plot(pred.cb1.sst, "slices", var = 1, col = 6, cumul = TRUE)
+
+plot(pred.cb1.sst, "contour", xlab="SST", key.title=title("RR"),
+    plot.title=title("Contour plot",xlab="SST",ylab="Lag")) 
+```
+
+```{r}
+
+modelfinal <- glm(Outbreak ~ cb1.rain + cb1.sst, family="binomial", Epiweek_avg)
+summary(modelfinal)
+
+
+pred.cb1.model1 <- crosspred(cb1.sst, modelfinal, at = 0:15, bylag = 1, cumul = T)
+pred.cb1.model2 <- crosspred(cb1.rain, modelfinal, at = 0:30, bylag = 1, cumul = T)
+
+# Cannot print all output, very long bc of vcov matrix
+# Selected all other options
+pred.cb1.model2$predvar
+pred.cb1.model2$lag
+pred.cb1.model2$bylag
+pred.cb1.model2$coefficients 
+
+
+# Creating plots for each variable in the model
+plot(pred.cb1.model1, "slices", var = 1, col = 6, cumul = TRUE)
+plot(pred.cb1.model2, "slices", var = 1, col = 6, cumul = TRUE)
+
+# Getting coefficient for the effect of rainfall against the outbreak, after accounting for SST
+
+rain <- pred.cb1.model2$allfit # "at=" argument from the crosspred() is same length as variable "names"  
+                                # Effect of each unit of variable for entire defined lag period 
+                                # (0 to 30 in this case in 1 unit intervals)
+raindf <- data.frame(rainamount = as.numeric(names(rain)), 
+                    effect = rain) # taking previous line of code but making it into a data frame
+
+rainmodel <- glm(effect ~ rainamount, data = raindf) # Effect of increase rainfall for all lag periods
+                                                  # Gaussian family not binomial
+                                                  # After adjusting for SST 
+summary(rainmodel) # For cumulative lag, effect of rainfall is positively associated with outbreak? 
+                   
+                 
+
+rain
+raindf
+```
+
+
+
+
